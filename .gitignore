@@ -20,5 +20,12 @@ __pycache__/
 # Release output
 dist/
 
+# Signing secrets — NEVER commit these (certs, keys, provisioning)
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+*.provisionprofile
+
 # Local Claude Code settings (machine-specific)
 .claude/settings.local.json
