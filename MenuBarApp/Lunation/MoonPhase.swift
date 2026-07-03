@@ -10,13 +10,23 @@ enum MoonPhase {
     static let full = 4
 
     /// SF Symbol name for an illumination level travelling in `direction`.
+    ///
+    /// Heads up: these glyphs render INVERTED relative to their names. In the menu
+    /// bar `moonphase.new.moon` draws as a SOLID disc and `moonphase.full.moon` as a
+    /// thin ring — Apple fills the shadowed area, not the lit area — so visual fill
+    /// *decreases* from `new` → `full` (and `crescent` looks fuller than `gibbous`).
+    /// We therefore map illumination (0 = idle … 4 = held awake) to whichever glyph
+    /// actually *looks* that full, so the moon reads empty (new) when idle and bright
+    /// (full) when awake. Don't "fix" the names back to match illumination — that
+    /// re-inverts what the user sees. (Measured hierarchical fill: new .58, crescent
+    /// .49, quarter .44, gibbous .40, full .30.)
     static func symbol(illumination: Int, direction: MoonDirection) -> String {
         switch illumination {
-        case ...0: return "moonphase.new.moon"
-        case 1:    return direction == .waxing ? "moonphase.waning.crescent" : "moonphase.waxing.crescent"
-        case 2:    return direction == .waxing ? "moonphase.last.quarter"   : "moonphase.first.quarter"
-        case 3:    return direction == .waxing ? "moonphase.waning.gibbous"  : "moonphase.waxing.gibbous"
-        default:   return "moonphase.full.moon"
+        case ...0: return "moonphase.full.moon"                                        // idle → looks like an empty new moon
+        case 1:    return direction == .waxing ? "moonphase.waning.gibbous"  : "moonphase.waxing.gibbous"
+        case 2:    return direction == .waxing ? "moonphase.last.quarter"    : "moonphase.first.quarter"
+        case 3:    return direction == .waxing ? "moonphase.waning.crescent" : "moonphase.waxing.crescent"
+        default:   return "moonphase.new.moon"                                          // held awake → looks like a bright full moon
         }
     }
 }

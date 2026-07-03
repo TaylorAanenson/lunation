@@ -36,8 +36,9 @@ struct LunationApp: App {
 
     private var menuBarIcon: String {
         // Not installed and daemon-down both mean "not working" → same sleepy icon
-        // (monitor.menuBarIcon returns moonphase.new.moon when the daemon isn't reporting).
-        guard daemon.isInstalled else { return "moonphase.new.moon" }
+        // (an empty new-moon look; NB the glyph named "full.moon" renders as the empty
+        // ring — see MoonPhase.symbol). monitor.menuBarIcon returns the same when down.
+        guard daemon.isInstalled else { return "moonphase.full.moon" }
         return monitor.menuBarIcon
     }
 
@@ -53,7 +54,7 @@ struct LunationApp: App {
 }
 
 /// Builds the menu-bar status image: an SF Symbol base with an optional badge
-/// composited into the bottom-right corner (moonphase.new.moon leaves that corner clear).
+/// composited into the bottom-right corner (the round moon glyph leaves that corner clear).
 /// Rendered as a template image so it stays monochrome and adapts to light/dark
 /// menu bars — a colored badge can't survive template rendering, so the states
 /// are distinguished by badge shape, not color.

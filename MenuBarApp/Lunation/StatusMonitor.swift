@@ -62,8 +62,9 @@ extension DaemonStatus {
 /// progress. All the phase/lean logic lives in `MoonWalk` (see MoonPhase.swift).
 @Observable @MainActor
 final class MoonPhaseAnimator {
-    /// The glyph currently shown in the menu bar.
-    private(set) var symbol = "moonphase.new.moon"
+    /// The glyph currently shown in the menu bar. Starts at the idle phase, which
+    /// renders as an empty new moon (see `MoonPhase.symbol` for the name inversion).
+    private(set) var symbol = "moonphase.full.moon"
 
     @ObservationIgnored private var walk = MoonWalk()
     @ObservationIgnored private var target = 0             // desired illumination 0…4
@@ -108,7 +109,7 @@ final class StatusMonitor {
     // fill tracks sleep state — new moon = free to sleep, full moon = held awake,
     // the partial phases = a live transition between the two (driven by `moon`).
     var menuBarIcon: String {
-        guard daemonConnected else { return "moonphase.new.moon" }   // daemon down — off the cycle
+        guard daemonConnected else { return "moonphase.full.moon" }  // daemon down — off the cycle; empty new-moon look
         return moon.symbol
     }
 
