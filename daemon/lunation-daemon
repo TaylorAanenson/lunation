@@ -1,0 +1,643 @@
+#!/usr/bin/python3
+"""
+lunation-daemon — ambient LaunchDaemon that watches Claude Code activity (via
+the heartbeat its CLI hooks write) and toggles lid-close sleep (disablesleep)
+accordingly.
+
+Runs as root via launchd. Config: /etc/lunation/config.json
+Status out: /var/run/lunation.status.json  (world-readable; app reads this)
+Intent in:  /etc/lunation/intent.json      (app writes this)
+Wake FIFO:  /var/run/lunation.wake         (app writes a byte to skip poll sleep)
+Log: /var/log/lunation-daemon.log
+"""
+
+# Defer annotation evaluation so PEP-604 unions (`float | None`, `bool | None`)
+# parse on stock macOS python (/usr/bin/python3 is 3.9.6, pre-PEP-604 runtime).
+# The daemon never introspects its own annotations, so stringizing them is safe.
+from __future__ import annotations
+
+import json
+import logging
+import logging.handlers
+import os
+import pwd
+import select
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+CONFIG_FILE  = Path("/etc/lunation/config.json")
+INTENT_FILE  = Path("/etc/lunation/intent.json")
+STATUS_FILE  = Path("/var/run/lunation.status.json")
+WAKE_FIFO    = Path("/var/run/lunation.wake")
+THERMAL_FILE = Path("/etc/lunation/thermal.json")
+HEARTBEAT_FILE = Path("/etc/lunation/heartbeat")
+LOG_FILE     = Path("/var/log/lunation-daemon.log")
+
+# App-reported thermal hints older than this are ignored (treated nominal), so a
+# dead app can't pin the Mac asleep forever after it has cooled.
+THERMAL_HINT_MAX_AGE = 30.0
+
+# Default for lid_input_quiet_seconds — a FALLBACK used only when macOS's
+# AppleClamshellCausesSleep policy bit can't be read: with the lid shut but user
+# input more recent than this, the daemon does NOT force sleep, assuming an active
+# clamshell session on an external display rather than a walk-away. Overridable
+# via config.
+LID_INPUT_QUIET_SECONDS = 300
+
+DEFAULTS = {
+    "grace_period_seconds": 90,
+    "poll_interval_seconds": 10,
+    "allow_battery": False,
+    # Thermal safety net: if macOS throttles the CPU to <= this speed-limit %
+    # (read from `pmset -g therm`), force sleep regardless of activity so a
+    # closed Mac can't keep cooking under load. 0 disables the cutoff.
+    "thermal_cutoff": 50,
+    # Heartbeat: Claude Code's CLI hooks touch the heartbeat file as it works;
+    # if it has been touched within this many seconds, count it as active. This
+    # is lunation's ONLY activity signal — there is no CPU/process heuristic,
+    # because the Claude desktop app pegs CPU just sitting idle and would falsely
+    # match. The window bridges long model-thinking pauses where no work happens.
+    # Requires the hooks (the app's "Keep awake while Claude Code is working"
+    # toggle); with them off, only manual Force Awake keeps the Mac up. 0 disables.
+    "heartbeat_window_seconds": 180,
+    # When work ends and the lid is already shut, macOS won't re-fire the lid-close
+    # sleep it suppressed while we held the Mac awake — the Mac just sits there
+    # awake. So on that transition the daemon nudges it with `pmset sleepnow`,
+    # guarded by lid + recent-input checks (see should_force_sleep) so it never
+    # yanks an active clamshell+external-display session to sleep. False disables
+    # the nudge and leaves all sleep decisions to macOS.
+    "sleep_when_lid_closed": True,
+    # Fallback for the nudge above, used only when AppleClamshellCausesSleep can't
+    # be read: how many seconds without keyboard/mouse input mark a walk-away
+    # rather than active clamshell use. Only consulted when sleep_when_lid_closed
+    # is true and the policy bit is unavailable.
+    "lid_input_quiet_seconds": LID_INPUT_QUIET_SECONDS,
+}
+
+
+def setup_logging() -> logging.Logger:
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    logger = logging.getLogger("lunation")
+    logger.setLevel(logging.DEBUG)
+    # Rotate at 1 MB, keep 3 old files, so the per-poll debug lines can't grow
+    # /var/log without bound on a long-running daemon.
+    handler = logging.handlers.RotatingFileHandler(
+        LOG_FILE, maxBytes=1_048_576, backupCount=3
+    )
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)-7s] %(message)s"))
+    logger.addHandler(handler)
+    return logger
+
+
+def setup_config_dir(log) -> None:
+    """Create /etc/lunation and chown it to the console user so the menu-bar app
+    (running as that user) can write intent.json and config.json.
+
+    SECURITY: this root daemon trusts the files in this dir — intent.json can
+    force the Mac awake, thermal.json can force it asleep, config.json sets the
+    thresholds. So the dir must be writable ONLY by the console user and
+    root, never by other local users. We deliberately use mode 0755 (owner-write
+    only), NOT 0775: on macOS every user's primary group is `staff` (gid 20), so
+    a group-writable dir would effectively let any local account write these
+    files. And we never fall back to a world-writable mode — if ownership can't
+    be set, we leave the dir root-owned (auto-detection still works; only the
+    app's manual force-awake is unavailable) rather than open it to everyone."""
+    config_dir = CONFIG_FILE.parent
+    try:
+        config_dir.mkdir(parents=True, exist_ok=True)
+        config_dir.chmod(0o755)
+        r = subprocess.run(
+            ["stat", "-f", "%Su", "/dev/console"],
+            capture_output=True, text=True, timeout=5,
+        )
+        username = r.stdout.strip()
+        if username and username not in ("root", ""):
+            pw = pwd.getpwnam(username)
+            os.chown(config_dir, pw.pw_uid, pw.pw_gid)
+            log.info(f"config dir owned by {username} (mode 0755)")
+        else:
+            log.info("no console user; leaving config dir root-owned")
+    except Exception as e:
+        # Intentionally do NOT loosen permissions on failure — a root-owned dir
+        # the app can't write to is far safer than a world-writable one.
+        log.warning(f"could not set up config dir (leaving as-is): {e}")
+
+
+def load_config() -> dict:
+    cfg = dict(DEFAULTS)
+    if CONFIG_FILE.exists():
+        try:
+            with open(CONFIG_FILE) as f:
+                raw = json.load(f)
+            cfg.update(raw)
+        except Exception:
+            pass
+
+    # Clamp numeric values to sane ranges. A bad config (e.g. poll=0) must never
+    # make the daemon busy-loop or keep the Mac awake forever.
+    def clamp(key, lo, hi, default, cast):
+        try:
+            cfg[key] = max(lo, min(hi, cast(cfg[key])))
+        except (TypeError, ValueError):
+            cfg[key] = default
+
+    clamp("poll_interval_seconds", 1, 3600, DEFAULTS["poll_interval_seconds"], int)
+    clamp("grace_period_seconds", 0, 86400, DEFAULTS["grace_period_seconds"], int)
+    clamp("thermal_cutoff", 0, 100, DEFAULTS["thermal_cutoff"], int)
+    clamp("heartbeat_window_seconds", 0, 86400, DEFAULTS["heartbeat_window_seconds"], int)
+    clamp("lid_input_quiet_seconds", 0, 86400, DEFAULTS["lid_input_quiet_seconds"], int)
+    cfg["allow_battery"] = bool(cfg.get("allow_battery", False))
+    cfg["sleep_when_lid_closed"] = bool(cfg.get("sleep_when_lid_closed", True))
+    return cfg
+
+
+def read_force_intent() -> tuple[bool, float | None]:
+    """Returns (force_awake, expires_at_or_None).
+    If expires_at is set and in the past, force_awake is treated as False."""
+    if not INTENT_FILE.exists():
+        return False, None
+    try:
+        with open(INTENT_FILE) as f:
+            data = json.load(f)
+        force_awake = bool(data.get("force_awake", False))
+        expires_at = data.get("expires_at")
+        if force_awake and expires_at is not None:
+            if time.time() > float(expires_at):
+                return False, float(expires_at)   # expired
+        return force_awake, float(expires_at) if expires_at is not None else None
+    except Exception:
+        return False, None
+
+
+def write_status(state: str, sleep_disabled: bool, force_awake: bool,
+                 consecutive_below: float = 0.0, grace_period: int = 90,
+                 expires_at: float | None = None, on_ac: bool = True,
+                 thermal_limit: int | None = None, thermal_trip: bool = False,
+                 heartbeat_active: bool = False):
+    tmp = STATUS_FILE.with_suffix(".tmp")
+    payload: dict = {
+        "state": state,
+        "sleep_disabled": sleep_disabled,
+        "force_awake": force_awake,
+        "timestamp": time.time(),
+        "consecutive_below": round(consecutive_below, 1),
+        "grace_period": grace_period,
+        "on_ac": on_ac,
+        "thermal_trip": thermal_trip,
+        "heartbeat_active": heartbeat_active,
+    }
+    if thermal_limit is not None:
+        payload["thermal_limit"] = thermal_limit
+    if expires_at is not None:
+        payload["expires_at"] = expires_at
+    try:
+        with open(tmp, "w") as f:
+            json.dump(payload, f)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, STATUS_FILE)
+    except Exception:
+        pass
+
+
+def on_ac() -> bool:
+    try:
+        r = subprocess.run(["pmset", "-g", "ps"], capture_output=True, text=True, timeout=5)
+        return "AC Power" in r.stdout
+    except Exception:
+        return True
+
+
+def set_disablesleep(value: int) -> bool:
+    try:
+        r = subprocess.run(
+            ["pmset", "-a", "disablesleep", str(value)],
+            capture_output=True, text=True, timeout=10,
+        )
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
+def get_actual_disablesleep() -> bool | None:
+    """Read the real system disablesleep state. Returns None if it can't be
+    determined. `pmset -g` always prints `SleepDisabled 1` when set, so the
+    safety-critical 'stuck awake' case is reliably observable."""
+    try:
+        r = subprocess.run(["pmset", "-g"], capture_output=True, text=True, timeout=5)
+        for line in r.stdout.splitlines():
+            if "SleepDisabled" in line:
+                return line.split()[-1] == "1"
+        return None
+    except Exception:
+        return None
+
+
+def get_thermal_pressure() -> int | None:
+    """Return the CPU speed limit % from `pmset -g therm` (100 = no throttle,
+    lower = thermal/power throttling). None if it can't be read. This is the
+    most reliable CLI signal for 'the machine is getting hot and backing off'."""
+    try:
+        r = subprocess.run(["pmset", "-g", "therm"], capture_output=True, text=True, timeout=5)
+        for line in r.stdout.splitlines():
+            if "CPU_Speed_Limit" in line:
+                # e.g. "CPU_Speed_Limit \t= 100"
+                return int(line.split("=")[-1].strip())
+        return None
+    except Exception:
+        return None
+
+
+def thermal_should_cutoff(speed_limit: int | None, cutoff: int) -> bool:
+    """Pure decision: True when thermal pressure warrants forcing sleep.
+    cutoff <= 0 disables the cutoff; an unreadable speed_limit never trips."""
+    return cutoff > 0 and speed_limit is not None and speed_limit <= cutoff
+
+
+def get_clamshell_closed() -> bool | None:
+    """True if the laptop lid is closed, False if open, None if it can't be
+    determined (e.g. a desktop Mac with no clamshell sensor). Read from IOKit's
+    AppleClamshellState, which reflects the real lid position."""
+    try:
+        r = subprocess.run(
+            ["ioreg", "-r", "-k", "AppleClamshellState", "-d", "4"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in r.stdout.splitlines():
+            if "AppleClamshellState" in line:
+                return line.strip().endswith("Yes")
+        return None
+    except Exception:
+        return None
+
+
+def get_clamshell_causes_sleep() -> bool | None:
+    """macOS's own answer to 'would closing the lid sleep the Mac right now?'
+    (IOPMrootDomain's AppleClamshellCausesSleep). True when a plain lid-close
+    would sleep it; False when an external display / clamshell-desktop setup is
+    holding it awake. None if unreadable.
+
+    NOTE: this bit also reflects the current disablesleep state — while sleep is
+    globally disabled it reads False regardless of the real clamshell setup, so
+    it is only meaningful once disablesleep has been cleared (enable_sleep())."""
+    try:
+        r = subprocess.run(
+            ["ioreg", "-r", "-k", "AppleClamshellCausesSleep", "-d", "4"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in r.stdout.splitlines():
+            if "AppleClamshellCausesSleep" in line:
+                return line.strip().endswith("Yes")
+        return None
+    except Exception:
+        return None
+
+
+def get_hid_idle_seconds() -> float | None:
+    """Seconds since the last user input (keyboard/mouse/trackpad), from
+    IOHIDSystem's HIDIdleTime (nanoseconds). None if it can't be read. Fallback
+    for telling a walked-away Mac from one actively used in clamshell mode when
+    the AppleClamshellCausesSleep policy bit is unavailable."""
+    try:
+        r = subprocess.run(
+            ["ioreg", "-c", "IOHIDSystem", "-d", "4", "-r"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in r.stdout.splitlines():
+            if "HIDIdleTime" in line:
+                return int(line.split("=")[-1].strip()) / 1_000_000_000
+        return None
+    except Exception:
+        return None
+
+
+def should_force_sleep(lid_closed: bool | None, clamshell_causes_sleep: bool | None,
+                       hid_idle: float | None, quiet_seconds: float,
+                       enabled: bool) -> bool:
+    """Pure decision for whether to issue `pmset sleepnow` after re-enabling
+    sleep. Requires the feature enabled and the lid closed (an unknown lid, e.g.
+    a desktop Mac, never forces sleep).
+
+    Primary signal is macOS's own policy, AppleClamshellCausesSleep: True means
+    this lid-close should sleep the Mac (so complete the sleep it skipped), False
+    means something like an external display is deliberately holding it awake
+    (so leave it). This must be read AFTER disablesleep is cleared, or it always
+    reads False.
+
+    Only when that policy bit is unreadable (None) does it fall back to a
+    heuristic: treat no user input within quiet_seconds as a walk-away (and
+    unknown idle as a walk-away too, since the lid is shut)."""
+    if not enabled or lid_closed is not True:
+        return False
+    if clamshell_causes_sleep is not None:
+        return clamshell_causes_sleep
+    return hid_idle is None or hid_idle >= quiet_seconds
+
+
+def read_thermal_hint(now: float | None = None,
+                      max_age: float = THERMAL_HINT_MAX_AGE) -> str | None:
+    """Read the app-reported macOS thermal state (`ProcessInfo.thermalState`:
+    nominal/fair/serious/critical). This is the model-independent signal that
+    works on Apple Silicon, where `pmset -g therm` exposes no CPU_Speed_Limit.
+    Returns the level string if the hint is fresh, else None. Stale/missing is
+    treated as 'no signal' (nominal) — the safe-for-availability direction, so a
+    crashed app doesn't keep the Mac asleep once it has cooled."""
+    if now is None:
+        now = time.time()
+    if not THERMAL_FILE.exists():
+        return None
+    try:
+        with open(THERMAL_FILE) as f:
+            data = json.load(f)
+        ts = float(data.get("timestamp", 0))
+        if now - ts > max_age:
+            return None
+        level = data.get("level")
+        return str(level) if level is not None else None
+    except Exception:
+        return None
+
+
+def read_heartbeat_age(now: float | None = None) -> float | None:
+    """Seconds since Claude Code last touched the heartbeat file, or None if it
+    doesn't exist. The file is touched by the user's Claude Code hooks (enabled
+    via the app's 'Claude Code' setting) on each prompt/tool use, and removed on
+    Stop. This is an authoritative activity signal — unlike CPU, it stays 'active'
+    through a long model-thinking pause."""
+    if now is None:
+        now = time.time()
+    try:
+        return now - HEARTBEAT_FILE.stat().st_mtime
+    except Exception:
+        return None
+
+
+def heartbeat_is_fresh(age: float | None, window: int) -> bool:
+    """Pure: True when a heartbeat is recent enough to count as active.
+    window <= 0 disables it; a missing heartbeat (age None) is never fresh."""
+    return window > 0 and age is not None and age <= window
+
+
+def step_state_machine(state: str, consecutive_below: float, above: bool,
+                       poll: int, grace_period: int):
+    """Pure idle/working/grace transition. Returns
+    (new_state, new_consecutive_below, transition_message_or_None)."""
+    if above:
+        if state != "working":
+            return "working", 0, f"{state} -> working"
+        return "working", 0, None
+
+    consecutive_below += poll
+    if state == "working":
+        return "grace", consecutive_below, "working -> grace"
+    if state == "grace":
+        if consecutive_below >= grace_period:
+            return "idle", 0, f"grace -> idle (below threshold for {consecutive_below:.0f}s)"
+        return "grace", consecutive_below, None
+    return "idle", 0, None
+
+
+class Daemon:
+    def __init__(self):
+        self.log = setup_logging()
+        self.sleep_disabled = False
+        self.running = True
+        self._fifo_fd = -1
+        self._warned_battery_force = False
+        self._warned_thermal = False
+        signal.signal(signal.SIGTERM, self._handle_signal)
+        signal.signal(signal.SIGINT, self._handle_signal)
+
+    def _handle_signal(self, signum, frame):
+        self.log.info(f"received signal {signum} — shutting down")
+        self.running = False
+        if self._fifo_fd >= 0:
+            try:
+                os.write(self._fifo_fd, b'\x00')
+            except OSError:
+                pass
+
+    def _interruptible_sleep(self, seconds: float):
+        """Sleep up to `seconds`, waking immediately if the app writes to the wake FIFO."""
+        if self._fifo_fd < 0:
+            time.sleep(seconds)
+            return
+        try:
+            r, _, _ = select.select([self._fifo_fd], [], [], seconds)
+            if r:
+                try:
+                    os.read(self._fifo_fd, 4096)  # drain
+                except (BlockingIOError, OSError):
+                    pass
+        except (OSError, ValueError):
+            time.sleep(seconds)
+
+    def disable_sleep(self):
+        if self.sleep_disabled:
+            return
+        if set_disablesleep(1):
+            self.sleep_disabled = True
+            self.log.info("disablesleep=1  (lid-close sleep suppressed)")
+        else:
+            self.log.error("pmset disablesleep 1 failed")
+
+    def enable_sleep(self):
+        if set_disablesleep(0):
+            self.sleep_disabled = False
+            self.log.info("disablesleep=0  (normal sleep restored)")
+        else:
+            self.log.error("pmset disablesleep 0 failed")
+
+    def force_sleep_if_lid_closed(self, cfg):
+        """Call right after we stop holding the Mac awake. macOS won't replay the
+        lid-close sleep it skipped while disablesleep was set, so a Mac whose lid
+        is already shut just sits there awake. If the user has walked away (lid
+        closed, no recent input), nudge it to sleep with `pmset sleepnow`."""
+        # Read AppleClamshellCausesSleep AFTER enable_sleep() cleared disablesleep,
+        # otherwise it always reports False. hid_idle is only the fallback.
+        lid_closed = get_clamshell_closed()
+        causes_sleep = get_clamshell_causes_sleep()
+        hid_idle = get_hid_idle_seconds()
+        if not should_force_sleep(lid_closed, causes_sleep, hid_idle,
+                                  cfg["lid_input_quiet_seconds"],
+                                  cfg["sleep_when_lid_closed"]):
+            return
+        idle_str = "unknown" if hid_idle is None else f"{hid_idle:.0f}s"
+        self.log.info(
+            f"idle with lid closed (clamshell_causes_sleep={causes_sleep}, "
+            f"input idle {idle_str}) — forcing sleep to complete the lid-close macOS skipped"
+        )
+        try:
+            subprocess.run(["pmset", "sleepnow"], capture_output=True, text=True, timeout=10)
+        except Exception as e:
+            self.log.warning(f"pmset sleepnow failed: {e}")
+
+    def reconcile_sleep_belief(self):
+        """Correct self.sleep_disabled if the real system state has drifted from
+        our belief (external pmset call, partial failure, sleep/wake glitch).
+        Re-syncing the belief lets the normal disable/enable logic re-assert the
+        desired state on the next decision — critical so we never leave the Mac
+        stuck awake based on a stale belief."""
+        actual = get_actual_disablesleep()
+        if actual is not None and actual != self.sleep_disabled:
+            self.log.warning(
+                f"disablesleep drift: belief={self.sleep_disabled} actual={actual} "
+                f"— resyncing belief so it can be re-asserted"
+            )
+            self.sleep_disabled = actual
+
+    def run(self):
+        self.log.info(f"daemon started (pid={os.getpid()}) — safety-resetting disablesleep")
+        self.enable_sleep()
+        setup_config_dir(self.log)
+
+        try:
+            WAKE_FIFO.unlink(missing_ok=True)
+            old_umask = os.umask(0)
+            os.mkfifo(WAKE_FIFO, mode=0o666)
+            os.umask(old_umask)
+            self._fifo_fd = os.open(str(WAKE_FIFO), os.O_RDWR | os.O_NONBLOCK)
+        except Exception as e:
+            self.log.warning(f"could not create wake FIFO (will use plain sleep): {e}")
+
+        cfg = load_config()
+        self.log.info(
+            f"config: heartbeat_window={cfg['heartbeat_window_seconds']}s  "
+            f"grace={cfg['grace_period_seconds']}s  poll={cfg['poll_interval_seconds']}s  "
+            f"allow_battery={cfg['allow_battery']}"
+        )
+
+        state = "idle"
+        consecutive_below = 0
+
+        try:
+            while self.running:
+                cfg = load_config()
+                poll = cfg["poll_interval_seconds"]
+
+                # Correct our belief about disablesleep if the real system state
+                # has drifted, before making any keep-awake decision this poll.
+                self.reconcile_sleep_belief()
+
+                # Read manual force intent first — a deliberate user override takes
+                # priority over the automatic heartbeat detection, and over the
+                # battery guard below (the user explicitly opted in, unlike auto).
+                force_awake, expires_at = read_force_intent()
+                if force_awake and expires_at is not None and expires_at - time.time() <= 0:
+                    self.log.info("timed force-awake expired — returning to normal")
+                    force_awake = False
+
+                is_on_ac = on_ac()
+                battery_blocked = not is_on_ac and not cfg["allow_battery"]
+                heartbeat_active = False  # set by the AC branch; default for others
+
+                if battery_blocked and not force_awake:
+                    # On battery with no manual override: suppress automatic
+                    # detection entirely and let the Mac sleep (thermal safety).
+                    was_disabled = self.sleep_disabled
+                    if self.sleep_disabled:
+                        self.log.warning("switched to battery — re-enabling sleep")
+                        self.enable_sleep()
+                    if state != "idle":
+                        self.log.info(f"state: {state} -> idle (on battery)")
+                        state = "idle"
+                        consecutive_below = 0
+                    # Same missed-lid-close case: if we just stopped holding it
+                    # awake and the lid is shut, macOS won't sleep on its own.
+                    if was_disabled and not self.sleep_disabled:
+                        self.force_sleep_if_lid_closed(cfg)
+                    write_status(state, self.sleep_disabled, False, 0,
+                                 cfg["grace_period_seconds"], on_ac=is_on_ac)
+                    self._interruptible_sleep(poll)
+                    continue
+
+                if battery_blocked:
+                    # Battery + manual force: honor the user's choice, but keep the
+                    # heartbeat heuristic suppressed so only the force holds it awake.
+                    if state != "idle":
+                        state = "idle"
+                        consecutive_below = 0
+                    if not self._warned_battery_force:
+                        self.log.warning(
+                            "manual force-awake honored ON BATTERY — a closed Mac "
+                            "on battery can overheat; keep it ventilated"
+                        )
+                        self._warned_battery_force = True
+                else:
+                    self._warned_battery_force = False
+                    # Activity = a fresh Claude Code heartbeat. The CLI hooks touch
+                    # the heartbeat file as it works, so this stays active through
+                    # long model-thinking pauses and, unlike a CPU heuristic, never
+                    # fires for the idle-but-busy Claude desktop app. No-op unless
+                    # the user enabled the hooks.
+                    heartbeat_active = heartbeat_is_fresh(
+                        read_heartbeat_age(), cfg["heartbeat_window_seconds"]
+                    )
+                    above = heartbeat_active
+
+                    state, consecutive_below, transition = step_state_machine(
+                        state, consecutive_below, above, poll, cfg["grace_period_seconds"]
+                    )
+                    if transition:
+                        self.log.info(f"state: {transition}  (heartbeat={heartbeat_active})")
+
+                # Thermal safety net: if the Mac is throttling under heat, force
+                # sleep regardless of activity or manual force. A closed laptop
+                # can't shed heat, so protecting the hardware overrides keeping a
+                # task alive. This is the one guardrail that beats force-awake.
+                thermal_limit = get_thermal_pressure()            # Intel: CPU_Speed_Limit
+                thermal_level = read_thermal_hint()                # app: ProcessInfo.thermalState
+                thermal_trip = cfg["thermal_cutoff"] > 0 and (
+                    thermal_should_cutoff(thermal_limit, cfg["thermal_cutoff"])
+                    or thermal_level in ("serious", "critical")
+                )
+                if thermal_trip:
+                    if not self._warned_thermal:
+                        self.log.warning(
+                            f"THERMAL CUTOFF — forcing sleep to protect hardware "
+                            f"(speed_limit={thermal_limit}, level={thermal_level})"
+                        )
+                        self._warned_thermal = True
+                else:
+                    if self._warned_thermal:
+                        self.log.info("thermal pressure cleared — resuming normal control")
+                    self._warned_thermal = False
+
+                should_keep_awake = (force_awake or state in ("working", "grace")) and not thermal_trip
+                if should_keep_awake:
+                    self.disable_sleep()
+                else:
+                    was_disabled = self.sleep_disabled
+                    self.enable_sleep()
+                    # On the awake -> idle transition, if the lid is already shut
+                    # macOS won't sleep on its own; nudge it (guarded inside).
+                    if was_disabled and not self.sleep_disabled:
+                        self.force_sleep_if_lid_closed(cfg)
+
+                write_status(state, self.sleep_disabled, force_awake,
+                             consecutive_below, cfg["grace_period_seconds"], expires_at,
+                             on_ac=is_on_ac, thermal_limit=thermal_limit, thermal_trip=thermal_trip,
+                             heartbeat_active=heartbeat_active)
+                self.log.debug(
+                    f"state={state}  force={force_awake}  "
+                    f"heartbeat={heartbeat_active}  thermal={thermal_limit}  "
+                    f"consecutive_below={consecutive_below:.0f}s"
+                )
+                self._interruptible_sleep(poll)
+
+        finally:
+            self.log.info("daemon stopping — resetting disablesleep")
+            self.enable_sleep()
+            write_status("idle", False, False)
+            if self._fifo_fd >= 0:
+                try:
+                    os.close(self._fifo_fd)
+                except OSError:
+                    pass
+            WAKE_FIFO.unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    Daemon().run()

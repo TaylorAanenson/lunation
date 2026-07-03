@@ -1,0 +1,451 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00000000000000000000000E /* LunationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000007 /* LunationApp.swift */; };
+		00000000000000000000000F /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000008 /* MenuBarView.swift */; };
+		000000000000000000000010 /* StatusMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000009 /* StatusMonitor.swift */; };
+		000000000000000000000011 /* IntentWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000A /* IntentWriter.swift */; };
+		000000000000000000000012 /* ConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000B /* ConfigStore.swift */; };
+		000000000000000000000013 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000C /* SettingsView.swift */; };
+		00000000000000000000001E /* DaemonManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001D /* DaemonManager.swift */; };
+		000000000000000000000024 /* NotificationSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000023 /* NotificationSender.swift */; };
+		000000000000000000000030 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000031 /* Assets.xcassets */; };
+		000000000000000000000041 /* MoonPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000040 /* MoonPhase.swift */; };
+		000000000000000000000043 /* MoonWalkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000042 /* MoonWalkTests.swift */; };
+		000000000000000000000044 /* MoonPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000040 /* MoonPhase.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000006 /* Lunation.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lunation.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000007 /* LunationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LunationApp.swift; sourceTree = "<group>"; };
+		000000000000000000000008 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		000000000000000000000009 /* StatusMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMonitor.swift; sourceTree = "<group>"; };
+		00000000000000000000000A /* IntentWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentWriter.swift; sourceTree = "<group>"; };
+		00000000000000000000000B /* ConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigStore.swift; sourceTree = "<group>"; };
+		00000000000000000000000C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		00000000000000000000000D /* Lunation.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Lunation.entitlements; sourceTree = "<group>"; };
+		00000000000000000000001D /* DaemonManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonManager.swift; sourceTree = "<group>"; };
+		00000000000000000000001F /* lunation-daemon */ = {isa = PBXFileReference; lastKnownFileType = text; name = "lunation-daemon"; path = "../../daemon/lunation-daemon"; sourceTree = "<group>"; };
+		000000000000000000000023 /* NotificationSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSender.swift; sourceTree = "<group>"; };
+		000000000000000000000025 /* com.lunation.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = com.lunation.daemon.plist; path = ../../daemon/com.lunation.daemon.plist; sourceTree = "<group>"; };
+		000000000000000000000031 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		000000000000000000000040 /* MoonPhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonPhase.swift; sourceTree = "<group>"; };
+		000000000000000000000042 /* MoonWalkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonWalkTests.swift; sourceTree = "<group>"; };
+		000000000000000000000045 /* LunationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LunationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		000000000000000000000015 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000049 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000000003 = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000004 /* Lunation */,
+				000000000000000000000046 /* LunationTests */,
+				000000000000000000000005 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		000000000000000000000046 /* LunationTests */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000042 /* MoonWalkTests.swift */,
+			);
+			path = LunationTests;
+			sourceTree = "<group>";
+		};
+		000000000000000000000004 /* Lunation */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000007 /* LunationApp.swift */,
+				000000000000000000000008 /* MenuBarView.swift */,
+				000000000000000000000009 /* StatusMonitor.swift */,
+				000000000000000000000040 /* MoonPhase.swift */,
+				00000000000000000000000A /* IntentWriter.swift */,
+				00000000000000000000000B /* ConfigStore.swift */,
+				00000000000000000000000C /* SettingsView.swift */,
+				00000000000000000000001D /* DaemonManager.swift */,
+				000000000000000000000023 /* NotificationSender.swift */,
+				00000000000000000000000D /* Lunation.entitlements */,
+				00000000000000000000001F /* lunation-daemon */,
+				000000000000000000000025 /* com.lunation.daemon.plist */,
+				000000000000000000000031 /* Assets.xcassets */,
+			);
+			path = Lunation;
+			sourceTree = "<group>";
+		};
+		000000000000000000000005 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000006 /* Lunation.app */,
+				000000000000000000000045 /* LunationTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		000000000000000000000002 /* Lunation */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00000000000000000000001C /* Build configuration list for PBXNativeTarget "Lunation" */;
+			buildPhases = (
+				000000000000000000000014 /* Sources */,
+				000000000000000000000015 /* Frameworks */,
+				000000000000000000000016 /* Resources */,
+				000000000000000000000026 /* Copy LaunchDaemon files */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Lunation;
+			productName = Lunation;
+			productReference = 000000000000000000000006 /* Lunation.app */;
+			productType = "com.apple.product-type.application";
+		};
+		000000000000000000000047 /* LunationTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00000000000000000000004C /* Build configuration list for PBXNativeTarget "LunationTests" */;
+			buildPhases = (
+				000000000000000000000048 /* Sources */,
+				000000000000000000000049 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LunationTests;
+			productName = LunationTests;
+			productReference = 000000000000000000000045 /* LunationTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		000000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					000000000000000000000047 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 00000000000000000000001B /* Build configuration list for PBXProject "Lunation" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 000000000000000000000003;
+			productRefGroup = 000000000000000000000005 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				000000000000000000000002 /* Lunation */,
+				000000000000000000000047 /* LunationTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		000000000000000000000016 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000030 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		000000000000000000000026 /* Copy LaunchDaemon files */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(PROJECT_DIR)/../daemon/lunation-daemon",
+				"$(PROJECT_DIR)/../daemon/com.lunation.daemon.plist",
+			);
+			name = "Copy LaunchDaemon files";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/Contents/Library/LaunchDaemons/lunation-daemon",
+				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/Contents/Library/LaunchDaemons/com.lunation.daemon.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "set -e\nDEST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Library/LaunchDaemons\"\nmkdir -p \"$DEST\"\ncp \"${PROJECT_DIR}/../daemon/lunation-daemon\" \"$DEST/\"\ncp \"${PROJECT_DIR}/../daemon/com.lunation.daemon.plist\" \"$DEST/\"\nchmod +x \"$DEST/lunation-daemon\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		000000000000000000000014 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00000000000000000000000E /* LunationApp.swift in Sources */,
+				00000000000000000000000F /* MenuBarView.swift in Sources */,
+				000000000000000000000010 /* StatusMonitor.swift in Sources */,
+				000000000000000000000041 /* MoonPhase.swift in Sources */,
+				000000000000000000000011 /* IntentWriter.swift in Sources */,
+				000000000000000000000012 /* ConfigStore.swift in Sources */,
+				000000000000000000000013 /* SettingsView.swift in Sources */,
+				00000000000000000000001E /* DaemonManager.swift in Sources */,
+				000000000000000000000024 /* NotificationSender.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000048 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000044 /* MoonPhase.swift in Sources */,
+				000000000000000000000043 /* MoonWalkTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		000000000000000000000017 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_CYCLE = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ARCHS = arm64;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		000000000000000000000018 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_CYCLE = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ARCHS = arm64;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		000000000000000000000019 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Lunation/Lunation.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 2WZ6A7Z8A4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Lunation;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lunation.menubar;
+				PRODUCT_NAME = Lunation;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		00000000000000000000001A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Lunation/Lunation.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 2WZ6A7Z8A4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Lunation;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lunation.menubar;
+				PRODUCT_NAME = Lunation;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		00000000000000000000004A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2WZ6A7Z8A4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lunation.menubar.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		00000000000000000000004B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2WZ6A7Z8A4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lunation.menubar.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		00000000000000000000001B /* Build configuration list for PBXProject "Lunation" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000017 /* Debug */,
+				000000000000000000000018 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		00000000000000000000001C /* Build configuration list for PBXNativeTarget "Lunation" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000019 /* Debug */,
+				00000000000000000000001A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		00000000000000000000004C /* Build configuration list for PBXNativeTarget "LunationTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00000000000000000000004A /* Debug */,
+				00000000000000000000004B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 000000000000000000000001 /* Project object */;
+}

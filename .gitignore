@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Xcode
+MenuBarApp/build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+
+# Node / Next.js (web/)
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Release output
+dist/
+
+# Local Claude Code settings (machine-specific)
+.claude/settings.local.json

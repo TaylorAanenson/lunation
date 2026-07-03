@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- No App Sandbox: the app reads /var/run/ (daemon status) and writes /etc/stayawake/ (intent + config) -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+
+    <!-- Required for SMAppService.daemon(plistName:).register() to work.
+         Add this back once the entitlement is approved through your Developer account.
+         Without it, DaemonManager.install() falls back to the osascript path. -->
+    <!-- <key>com.apple.developer.service-management.daemon-installer</key>
+    <true/> -->
+</dict>
+</plist>

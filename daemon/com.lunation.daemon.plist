@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lunation.daemon</string>
+
+    <!-- Classic LaunchDaemon: launch the daemon by explicit interpreter + path.
+         The daemon is a #!/usr/bin/python3 SCRIPT, so it must be spawned as an
+         argument to python3 — NOT via SMAppService's BundleProgram, which
+         requires a signed Mach-O and lands a script in launchd's EX_CONFIG
+         "penalty box". install.sh copies the daemon to this exact path. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/usr/local/lib/lunation/lunation-daemon</string>
+    </array>
+
+    <!-- launchd restarts the daemon if it exits for any reason -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Start immediately when loaded -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- launchd captures stdout/stderr (uncaught tracebacks, pre-logging crashes)
+         to its OWN file. The daemon's normal lines go through Python's
+         RotatingFileHandler to /var/log/lunation-daemon.log; pointing launchd at
+         that same file would let it keep writing to the renamed inode after a
+         rotation, losing crash output and orphaning a file that never rotates. -->
+    <key>StandardOutPath</key>
+    <string>/var/log/lunation-daemon.launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/lunation-daemon.launchd.log</string>
+
+    <!-- Minimum 5 seconds between restarts to avoid rapid-cycling on persistent errors -->
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+</dict>
+</plist>
