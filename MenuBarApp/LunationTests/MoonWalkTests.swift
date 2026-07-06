@@ -35,7 +35,9 @@ final class MoonWalkTests: XCTestCase {
     func test_starts_at_new_moon() {
         let walk = MoonWalk()
         XCTAssertEqual(walk.displayed, 0)
-        XCTAssertEqual(walk.symbol, "moonphase.new.moon")
+        // Idle (illumination 0) is the empty-looking moon. SF Symbols' moonphase
+        // names render inverted, so that glyph is "moonphase.full.moon" (see MoonPhase).
+        XCTAssertEqual(walk.symbol, "moonphase.full.moon")
     }
 
     func test_step_returns_false_when_already_at_target() {
@@ -56,7 +58,9 @@ final class MoonWalkTests: XCTestCase {
         var walk = MoonWalk()
         let symbols = sweep(&walk, toward: 4)
         XCTAssertEqual(symbols.count, 4)
-        XCTAssertEqual(symbols.last, "moonphase.full.moon")
+        // Fully lit (illumination 4) is the bright disc — the inverted-name glyph
+        // "moonphase.new.moon" (see MoonPhase.symbol).
+        XCTAssertEqual(symbols.last, "moonphase.new.moon")
     }
 
     // MARK: — Lean flips only at the extremes
@@ -111,8 +115,10 @@ final class MoonWalkTests: XCTestCase {
         for (a, b) in zip(partials, partials.dropFirst()) {
             XCTAssertEqual(a, b, "lit side flipped mid-sweep: \(a) -> \(b)")
         }
-        // And the wax after the reversal stays on the wind-down's side.
-        XCTAssertEqual(litSide(walk.symbol == "moonphase.full.moon"
+        // And the wax after the reversal stays on the wind-down's side. At full
+        // illumination the glyph is the side-agnostic "moonphase.new.moon" (inverted
+        // name), so substitute a right-lit proxy to read the side back.
+        XCTAssertEqual(litSide(walk.symbol == "moonphase.new.moon"
                                ? "moonphase.waxing.gibbous" : walk.symbol),
                        sideAtReversal)
     }
