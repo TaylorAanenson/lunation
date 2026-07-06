@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.lunation.daemon</string>
+    <string>dev.lunation.daemon</string>
 
     <!-- Classic LaunchDaemon: launch the daemon by explicit interpreter + path.
          The daemon is a #!/usr/bin/python3 SCRIPT, so it must be spawned as an

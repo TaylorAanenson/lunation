@@ -33,7 +33,7 @@
 		00000000000000000000001D /* DaemonManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonManager.swift; sourceTree = "<group>"; };
 		00000000000000000000001F /* lunation-daemon */ = {isa = PBXFileReference; lastKnownFileType = text; name = "lunation-daemon"; path = "../../daemon/lunation-daemon"; sourceTree = "<group>"; };
 		000000000000000000000023 /* NotificationSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSender.swift; sourceTree = "<group>"; };
-		000000000000000000000025 /* com.lunation.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = com.lunation.daemon.plist; path = ../../daemon/com.lunation.daemon.plist; sourceTree = "<group>"; };
+		000000000000000000000025 /* dev.lunation.daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = dev.lunation.daemon.plist; path = ../../daemon/dev.lunation.daemon.plist; sourceTree = "<group>"; };
 		000000000000000000000031 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		000000000000000000000040 /* MoonPhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonPhase.swift; sourceTree = "<group>"; };
 		000000000000000000000042 /* MoonWalkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonWalkTests.swift; sourceTree = "<group>"; };
@@ -81,7 +81,7 @@
 				000000000000000000000023 /* NotificationSender.swift */,
 				00000000000000000000000D /* Lunation.entitlements */,
 				00000000000000000000001F /* lunation-daemon */,
-				000000000000000000000025 /* com.lunation.daemon.plist */,
+				000000000000000000000025 /* dev.lunation.daemon.plist */,
 				000000000000000000000031 /* Assets.xcassets */,
 			);
 			path = Lunation;
@@ -194,16 +194,16 @@
 			);
 			inputPaths = (
 				"$(PROJECT_DIR)/../daemon/lunation-daemon",
-				"$(PROJECT_DIR)/../daemon/com.lunation.daemon.plist",
+				"$(PROJECT_DIR)/../daemon/dev.lunation.daemon.plist",
 			);
 			name = "Copy LaunchDaemon files";
 			outputPaths = (
 				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/Contents/Library/LaunchDaemons/lunation-daemon",
-				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/Contents/Library/LaunchDaemons/com.lunation.daemon.plist",
+				"$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/Contents/Library/LaunchDaemons/dev.lunation.daemon.plist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "set -e\nDEST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Library/LaunchDaemons\"\nmkdir -p \"$DEST\"\ncp \"${PROJECT_DIR}/../daemon/lunation-daemon\" \"$DEST/\"\ncp \"${PROJECT_DIR}/../daemon/com.lunation.daemon.plist\" \"$DEST/\"\nchmod +x \"$DEST/lunation-daemon\"\n";
+			shellScript = "set -e\nDEST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Library/LaunchDaemons\"\nmkdir -p \"$DEST\"\ncp \"${PROJECT_DIR}/../daemon/lunation-daemon\" \"$DEST/\"\ncp \"${PROJECT_DIR}/../daemon/dev.lunation.daemon.plist\" \"$DEST/\"\nchmod +x \"$DEST/lunation-daemon\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

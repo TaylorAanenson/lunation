@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-DAEMON_LABEL="com.lunation.daemon"
+DAEMON_LABEL="dev.lunation.daemon"
 PLIST_DST="/Library/LaunchDaemons/${DAEMON_LABEL}.plist"
 INSTALL_DIR="/usr/local/lib/lunation"
 CONFIG_DIR="/etc/lunation"
@@ -80,7 +80,16 @@ EOF
 
   # Install plist
   install -m 644 -o root -g wheel \
-    "$SCRIPT_DIR/com.lunation.daemon.plist" "$PLIST_DST"
+    "$SCRIPT_DIR/dev.lunation.daemon.plist" "$PLIST_DST"
+
+  # Clean up a previous com.lunation.daemon install (label renamed to dev.lunation.daemon).
+  OLD_PLIST=/Library/LaunchDaemons/com.lunation.daemon.plist
+  if [[ -f "$OLD_PLIST" ]] || launchctl list 2>/dev/null | grep -q "com.lunation.daemon"; then
+    launchctl bootout "system/com.lunation.daemon" 2>/dev/null \
+      || launchctl unload "$OLD_PLIST" 2>/dev/null || true
+    rm -f "$OLD_PLIST"
+    echo "  Removed previous com.lunation.daemon"
+  fi
 
   # Unload first if already running (upgrade path)
   if daemon_loaded; then

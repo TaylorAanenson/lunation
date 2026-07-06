@@ -10,7 +10,7 @@ private let fallbackPlist = """
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.lunation.daemon</string>
+    <string>dev.lunation.daemon</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/python3</string>
@@ -46,7 +46,7 @@ final class DaemonManager {
 
     // MARK: — Well-known paths
 
-    nonisolated static let label     = "com.lunation.daemon"
+    nonisolated static let label     = "dev.lunation.daemon"
     nonisolated static let plistName = "\(label).plist"
     nonisolated static let plistPath = "/Library/LaunchDaemons/\(label).plist"
     nonisolated static let daemonDst = "/usr/local/lib/lunation/lunation-daemon"
@@ -259,9 +259,9 @@ final class DaemonManager {
         set -e
         \(bashTimeoutFn)
 
-        # --- Migrate from the old 'lunation' install, if present ---
+        # --- Migrate from the previous com.lunation.daemon install, if present ---
         OLD_PLIST=/Library/LaunchDaemons/com.lunation.daemon.plist
-        lc /bin/launchctl bootout 'system/\(label)' 2>/dev/null \
+        lc /bin/launchctl bootout 'system/com.lunation.daemon' 2>/dev/null \
             || lc /bin/launchctl unload "$OLD_PLIST" 2>/dev/null || true
         # Reset sleep state before tearing the old daemon down, so a stale
         # disablesleep can never be left stuck once it's gone.
