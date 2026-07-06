@@ -67,14 +67,6 @@
 			);
 			sourceTree = "<group>";
 		};
-		000000000000000000000046 /* LunationTests */ = {
-			isa = PBXGroup;
-			children = (
-				000000000000000000000042 /* MoonWalkTests.swift */,
-			);
-			path = LunationTests;
-			sourceTree = "<group>";
-		};
 		000000000000000000000004 /* Lunation */ = {
 			isa = PBXGroup;
 			children = (
@@ -102,6 +94,14 @@
 				000000000000000000000045 /* LunationTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		000000000000000000000046 /* LunationTests */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000042 /* MoonWalkTests.swift */,
+			);
+			path = LunationTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -240,6 +240,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -279,7 +280,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				ARCHS = arm64;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -292,6 +292,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -325,7 +326,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				ARCHS = arm64;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -336,9 +336,9 @@
 		000000000000000000000019 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Lunation/Lunation.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -351,7 +351,7 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.lunation.menubar;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.lunation.Lunation;
 				PRODUCT_NAME = Lunation;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -362,9 +362,9 @@
 		00000000000000000000001A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Lunation/Lunation.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -377,7 +377,7 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.lunation.menubar;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.lunation.Lunation;
 				PRODUCT_NAME = Lunation;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -394,7 +394,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.lunation.menubar.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.lunation.LunationTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
@@ -409,7 +409,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.lunation.menubar.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.lunation.LunationTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
