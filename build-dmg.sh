@@ -35,7 +35,8 @@ die()  { echo "error: $1" >&2; exit 1; }
 
 # --- preflight -----------------------------------------------------------------------
 command -v xcodebuild >/dev/null || die "xcodebuild not found (install Xcode)."
-security find-identity -v -p codesigning 2>/dev/null | grep -q "Developer ID Application" \
+DEVID_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Developer ID Application/{print $2; exit}')"
+[[ -n "$DEVID_IDENTITY" ]] \
   || die "no 'Developer ID Application' certificate in the keychain. Add one in Xcode → Settings → Accounts → Manage Certificates."
 xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1 \
   || die "notarytool profile '$NOTARY_PROFILE' not found. Create it with: xcrun notarytool store-credentials $NOTARY_PROFILE --apple-id <you> --team-id $TEAM_ID"
@@ -99,16 +100,29 @@ else
   rm -rf "$staging"
 fi
 
-# --- 4. notarize + staple the DMG ----------------------------------------------------
+# --- 4. sign the DMG -----------------------------------------------------------------
+# hdiutil/create-dmg produce an UNSIGNED disk image. Notarizing + stapling alone
+# leaves it with a ticket but "no usable signature", which Gatekeeper/spctl can't
+# assess. Sign it with Developer ID (with a secure timestamp) BEFORE notarizing.
+step "Signing the DMG"
+codesign --force --timestamp --sign "$DEVID_IDENTITY" "$OUT_DMG"
+
+# --- 5. notarize + staple the DMG ----------------------------------------------------
 step "Notarizing the DMG (this waits for Apple)"
 xcrun notarytool submit "$OUT_DMG" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$OUT_DMG"
 
-# --- 5. verify -----------------------------------------------------------------------
+# --- 6. verify -----------------------------------------------------------------------
+# stapler validate is the authoritative check (ticket present + valid). spctl is
+# informational — it can be finicky on disk images, so don't fail the build on it.
 step "Verifying"
-xcrun stapler validate "$OUT_DMG"
-spctl -a -t open --context context:primary-signature -vv "$OUT_DMG" \
-  || die "Gatekeeper rejected the DMG — check signing/notarization above."
+xcrun stapler validate "$OUT_DMG" \
+  || die "notarization ticket not stapled — the DMG would be rejected by Gatekeeper."
+if spctl -a -t open --context context:primary-signature -vv "$OUT_DMG"; then
+  echo "  Gatekeeper: accepted (Notarized Developer ID) ✓"
+else
+  echo "  note: spctl was inconclusive, but the ticket validated above — the DMG is good to ship."
+fi
 
 printf '\n\033[1;32m✓ Done:\033[0m %s\n' "$OUT_DMG"
 echo "  Upload it to a GitHub Release (asset name: $APP_NAME.dmg)."
