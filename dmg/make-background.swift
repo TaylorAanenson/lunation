@@ -54,5 +54,8 @@ for pts in [[(452.0,380.0),(612,380)], [(612.0,396.0),(636,380),(612,364)]] {
     p.stroke() }
 
 NSGraphicsContext.restoreGraphicsState()
+// Tag as 2x: 1080x760 px shown as 540x380 points (144 dpi). Without this, Finder
+// treats the pixels as points and the background overflows the DMG window.
+rep.size = NSSize(width: 540, height: 380)
 try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: CommandLine.arguments[1]))
 print("wrote", CommandLine.arguments[1])
