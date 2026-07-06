@@ -91,8 +91,23 @@ rm -f "$APP_ZIP"
 # --- 3. build the DMG ----------------------------------------------------------------
 step "Building $OUT_DMG"
 if command -v create-dmg >/dev/null 2>&1; then
-  create-dmg --volname "$VOLNAME" --app-drop-link 450 150 "$OUT_DMG" "$APP"
+  # Styled install window: app on the left, Applications alias on the right, with
+  # the branded background (arrow points between them). Background is 2x the window
+  # size so it stays crisp on Retina. See dmg/make-background.swift to regenerate it.
+  create-dmg \
+    --volname "$VOLNAME" \
+    --background "dmg/background.png" \
+    --window-pos 200 120 \
+    --window-size 540 380 \
+    --icon-size 128 \
+    --icon "$APP_NAME.app" 140 190 \
+    --app-drop-link 400 190 \
+    --hide-extension "$APP_NAME.app" \
+    --no-internet-enable \
+    "$OUT_DMG" "$APP"
 else
+  echo "  note: 'create-dmg' not found — building a PLAIN DMG (no custom layout)."
+  echo "        For the styled drag-to-Applications window:  brew install create-dmg"
   staging="$(mktemp -d)"
   cp -R "$APP" "$staging/"
   ln -s /Applications "$staging/Applications"   # drag-to-install target

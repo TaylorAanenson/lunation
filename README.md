@@ -185,11 +185,14 @@ plist are bundled into the app and installed from there via the in-app "Install 
 ### Building a release DMG
 `./build-dmg.sh` produces a signed, notarized, stapled `dist/Lunation.dmg` ready to attach to a
 GitHub Release. It archives the Release build, exports it with **Developer ID**, notarizes and
-staples the app, wraps it in a DMG (uses `create-dmg` if installed, else `hdiutil`), then
-notarizes, staples, and Gatekeeper-verifies the DMG. One-time prerequisites:
+staples the app, wraps it in a DMG, signs it, then notarizes, staples, and Gatekeeper-verifies
+the DMG. One-time prerequisites:
 ```sh
 # a "Developer ID Application" cert must be in your keychain, plus a notarytool profile:
 xcrun notarytool store-credentials notary --apple-id "you@example.com" --team-id 2WZ6A7Z8A4
+brew install create-dmg   # for the styled drag-to-Applications window (else a plain DMG)
 ```
+The install window (app icon → Applications alias over a branded background) is styled via
+`create-dmg` using `dmg/background.png`; regenerate that art with `dmg/make-background.swift`.
 Then just `./build-dmg.sh` (or `./build-dmg.sh path/to/Lunation.app` to package an already-built
 app). Override `TEAM_ID`, `NOTARY_PROFILE`, etc. via env vars.
