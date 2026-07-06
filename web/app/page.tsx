@@ -181,7 +181,7 @@ export default function Home() {
           frac={0.5}
         />
         <Feature
-          title="Sleeps itself back"
+          title="Puts itself back to sleep"
           body="Once the task goes quiet past a grace period, normal sleep comes back automatically — and it's restored just as reliably on quit, crash, and restart, so your Mac is never stranded awake."
           frac={0}
         />
